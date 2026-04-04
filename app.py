@@ -255,5 +255,8 @@ elif st.session_state.step == 4:
     st.sidebar.success("Hospital Notified")
 
 st.sidebar.markdown("---")
+st.sidebar.write("### 🔗 Quick Links")
+st.sidebar.markdown("[GitHub Repository](https://github.com/Tharunnagabramhagna/LifeLine-AI)")
+st.sidebar.markdown("---")
 st.sidebar.write("Developed by Tharun Satrasala")
 st.sidebar.write("© 2026 LifeLine AI")
