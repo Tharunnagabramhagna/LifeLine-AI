@@ -1,0 +1,8 @@
+.streamlit/
+venv/
+__pycache__/
+*.db
+lifeline.db
+test_lifeline.db
+*.pyc
+.env

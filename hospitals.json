@@ -1,0 +1,42 @@
+[
+    {
+        "name": "City General Hospital",
+        "lat": 17.3850,
+        "lon": 78.4867,
+        "total_beds": 200,
+        "available_beds": 15,
+        "specialty": "Trauma"
+    },
+    {
+        "name": "Apollo Emergency Center",
+        "lat": 17.4250,
+        "lon": 78.4100,
+        "total_beds": 150,
+        "available_beds": 0,
+        "specialty": "Cardiac"
+    },
+    {
+        "name": "Global Health Institute",
+        "lat": 17.4450,
+        "lon": 78.3800,
+        "total_beds": 100,
+        "available_beds": 8,
+        "specialty": "Pediatric"
+    },
+    {
+        "name": "Fortis Cardiac Care",
+        "lat": 17.4000,
+        "lon": 78.4600,
+        "total_beds": 120,
+        "available_beds": 5,
+        "specialty": "Cardiac"
+    },
+    {
+        "name": "Children's Hope Hospital",
+        "lat": 17.3600,
+        "lon": 78.4500,
+        "total_beds": 80,
+        "available_beds": 12,
+        "specialty": "Pediatric"
+    }
+]

@@ -4,3 +4,7 @@ folium
 streamlit-folium
 geopy
 numpy
+openrouteservice
+streamlit-mic-recorder
+google-generativeai
+fpdf2
