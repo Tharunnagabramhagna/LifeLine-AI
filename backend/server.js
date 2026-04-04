@@ -3,6 +3,7 @@ const cors = require('cors');
 const http = require('http');
 const { Server } = require('socket.io');
 const jwt = require('jsonwebtoken');
+const bcrypt = require('bcryptjs');
 const db = require('./database');
 const seedData = require('./seed');
 
@@ -19,7 +20,7 @@ const io = new Server(server, {
 });
 
 const PORT = process.env.PORT || 5000;
-const JWT_SECRET = 'lifeline-ai-secret-key'; // For hackathon demo
+const JWT_SECRET = process.env.JWT_SECRET || 'lifeline-ai-secret-key'; // For hackathon demo
 
 // CORS configuration
 const corsOptions = {
@@ -36,26 +37,78 @@ const authenticateToken = (req, res, next) => {
     const authHeader = req.headers['authorization'];
     const token = authHeader && authHeader.split(' ')[1];
 
-    if (!token) return res.status(401).json({ error: 'Access denied. No token provided.' });
+    if (!token) return res.status(401).json({ success: false, message: 'Access denied. No token provided.' });
 
     jwt.verify(token, JWT_SECRET, (err, user) => {
-        if (err) return res.status(403).json({ error: 'Invalid or expired token.' });
+        if (err) return res.status(403).json({ success: false, message: 'Invalid or expired token.' });
         req.user = user;
         next();
     });
 };
 
 // --- Auth Routes ---
-app.post('/api/login', (req, res) => {
+
+// POST /api/signup → Register a new user
+app.post('/api/signup', async (req, res) => {
+    const { username, email, password } = req.body;
+
+    if (!username || !email || !password) {
+        return res.status(400).json({ success: false, message: 'All fields (username, email, password) are required.' });
+    }
+
+    try {
+        // Check if user already exists
+        const existingUser = db.prepare('SELECT * FROM users WHERE email = ?').get(email);
+        if (existingUser) {
+            return res.status(409).json({ success: false, message: 'User with this email already exists.' });
+        }
+
+        // Hash password
+        const salt = await bcrypt.genSalt(10);
+        const hashedPassword = await bcrypt.hash(password, salt);
+
+        // Insert into database
+        db.prepare('INSERT INTO users (username, email, password) VALUES (?, ?, ?)').run(username, email, hashedPassword);
+
+        res.status(201).json({ success: true, message: 'User registered successfully' });
+    } catch (error) {
+        console.error('Signup error:', error);
+        res.status(500).json({ success: false, message: 'Internal server error during registration' });
+    }
+});
+
+// POST /api/login → Authenticate user and return JWT
+app.post('/api/login', async (req, res) => {
     const { email, password } = req.body;
-    
-    // Simple demo login (In real app, check against hashed DB password)
-    if (email === 'admin@lifeline.ai' && password === 'admin123') {
-        const user = { id: 1, email: email, role: 'dispatcher' };
-        const token = jwt.sign(user, JWT_SECRET, { expiresIn: '8h' });
-        res.json({ token, user });
-    } else {
-        res.status(401).json({ error: 'Invalid credentials' });
+
+    if (!email || !password) {
+        return res.status(400).json({ success: false, message: 'Email and password are required.' });
+    }
+
+    try {
+        // Find user by email
+        const user = db.prepare('SELECT * FROM users WHERE email = ?').get(email);
+        if (!user) {
+            return res.status(401).json({ success: false, message: 'Invalid credentials' });
+        }
+
+        // Compare password using bcrypt
+        const isMatch = await bcrypt.compare(password, user.password);
+        if (!isMatch) {
+            return res.status(401).json({ success: false, message: 'Invalid credentials' });
+        }
+
+        // Generate JWT token
+        const token = jwt.sign({ id: user.id, email: user.email }, JWT_SECRET, { expiresIn: '1h' });
+
+        res.json({
+            success: true,
+            token,
+            user: { id: user.id, username: user.username, email: user.email }
+        });
+    } catch (error) {
+        console.error('Login error:', error);
+        res.status(500).json({ success: false, message: 'Internal server error during login' });
     }
 });
 

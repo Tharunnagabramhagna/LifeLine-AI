@@ -4,32 +4,23 @@ import EventCard from './EventCard';
 import AmbulanceStatus from './AmbulanceStatus';
 import LifeLineMap from './LifeLineMap';
 import Analytics from './Analytics';
+import { apiRequest } from '../services/api';
 
 const Dashboard = () => {
     const [events, setEvents] = useState([]);
     const [ambulances, setAmbulances] = useState([]);
     const [analytics, setAnalytics] = useState(null);
     const [loading, setLoading] = useState(true);
+    const [isLoggedIn, setIsLoggedIn] = useState(!!localStorage.getItem('token'));
 
-    // Mock coordinates for demo purposes
-    const mockIncidentLoc = [40.7128, -74.0060];
-    const mockAmbulanceLoc = [40.7306, -73.9352];
-
-    const API_BASE_URL = "http://localhost:5000/api";
     const SOCKET_URL = "http://localhost:5000";
 
     const fetchData = async () => {
         try {
-            const [eventsRes, ambulancesRes, analyticsRes] = await Promise.all([
-                fetch(`${API_BASE_URL}/events`),
-                fetch(`${API_BASE_URL}/ambulances`),
-                fetch(`${API_BASE_URL}/analytics`)
-            ]);
-
             const [eventsData, ambulancesData, analyticsData] = await Promise.all([
-                eventsRes.json(),
-                ambulancesRes.json(),
-                analyticsRes.json()
+                apiRequest('/events'),
+                apiRequest('/ambulances'),
+                apiRequest('/analytics')
             ]);
 
             setEvents(eventsData);
@@ -37,19 +28,24 @@ const Dashboard = () => {
             setAnalytics(analyticsData);
         } catch (error) {
             console.error("Failed to fetch dashboard data:", error);
+            if (error.message.includes('Session expired')) {
+                setIsLoggedIn(false);
+            }
         } finally {
             setLoading(false);
         }
     };
 
     useEffect(() => {
+        if (!isLoggedIn) return;
+
         fetchData();
 
         const socket = io(SOCKET_URL);
 
         socket.on('new-emergency', (data) => {
             console.log("New Emergency Received:", data);
-            fetchData(); // Re-fetch to update lists and analytics
+            fetchData();
         });
 
         socket.on('event-completed', (data) => {
@@ -63,7 +59,37 @@ const Dashboard = () => {
         });
 
         return () => socket.disconnect();
-    }, []);
+    }, [isLoggedIn]);
+
+    if (!isLoggedIn) {
+        return (
+            <div className="login-prompt">
+                <h2>🔐 Dispatcher Login Required</h2>
+                <p>Please login to access the LifeLine-AI dashboard.</p>
+                <button onClick={() => window.location.reload()}>Try Again</button>
+                <style jsx>{`
+                    .login-prompt {
+                        height: 100vh;
+                        display: flex;
+                        flex-direction: column;
+                        align-items: center;
+                        justify-content: center;
+                        font-family: 'Inter', sans-serif;
+                        background: #f4f7f6;
+                    }
+                    button {
+                        margin-top: 20px;
+                        padding: 10px 20px;
+                        background: #e74c3c;
+                        color: white;
+                        border: none;
+                        border-radius: 5px;
+                        cursor: pointer;
+                    }
+                `}</style>
+            </div>
+        );
+    }
 
     if (loading) return <div className="loading">Initializing LifeLine AI Dashboard...</div>;
 

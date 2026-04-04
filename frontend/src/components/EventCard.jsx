@@ -1,4 +1,5 @@
 import React from 'react';
+import { apiRequest } from '../services/api';
 
 const EventCard = ({ event, onComplete }) => {
     const statusColors = {
@@ -10,13 +11,14 @@ const EventCard = ({ event, onComplete }) => {
 
     const handleFinishTrip = async () => {
         try {
-            const response = await fetch(`http://localhost:5000/api/complete/${event.id}`, {
+            const data = await apiRequest(`/complete/${event.id}`, {
                 method: 'POST'
             });
-            if (response.ok) {
+            if (data.success) {
                 if (onComplete) onComplete(event.id);
             }
         } catch (error) {
+            alert(error.message);
             console.error("Failed to finish trip:", error);
         }
     };
