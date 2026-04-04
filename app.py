@@ -120,7 +120,7 @@ if st.session_state.step == 1:
                     "loc": (user_lat, user_lon),
                     "desc": location_desc
                 }
-                with st.spinner("Processing request and analyzing nearest resources..."):
+                with st.spinner("Finding nearest ambulance..."):
                     time.sleep(2)
                 st.session_state.step = 2
                 st.rerun()
@@ -136,7 +136,7 @@ elif st.session_state.step == 2:
     nearest_amb, distance = get_nearest_ambulance(user_loc)
     st.session_state.ambulance_data = nearest_amb
     
-    st.success(f"✅ AI has identified the nearest ambulance!")
+    st.success(f"✅ Ambulance Assigned: {nearest_amb['id']} is on the way!")
     
     col1, col2 = st.columns([1, 1])
     
@@ -156,11 +156,17 @@ elif st.session_state.step == 2:
         st.write(f"**Emergency:** {st.session_state.request_data['type']}")
         st.markdown("</div>", unsafe_allow_html=True)
 
-    if st.button("Confirm & Start Route Optimization"):
-        with st.spinner("Calculating optimal route avoiding traffic..."):
-            time.sleep(1.5)
-        st.session_state.step = 3
-        st.rerun()
+    col1, col2 = st.columns(2)
+    with col1:
+        if st.button("Confirm & Start Route Optimization"):
+            with st.spinner("Calculating optimal route avoiding traffic..."):
+                time.sleep(1.5)
+            st.session_state.step = 3
+            st.rerun()
+    with col2:
+        if st.button("Back"):
+            st.session_state.step = 1
+            st.rerun()
 
 # Step 3: Route Optimization
 elif st.session_state.step == 3:
@@ -191,9 +197,15 @@ elif st.session_state.step == 3:
     with col2:
         st.metric("Estimated Time", f"{int(geodesic(amb_loc, user_loc).km * 2.5)} mins", "-2 mins (AI Savings)")
 
-    if st.button("Proceed to Hospital Notification"):
-        st.session_state.step = 4
-        st.rerun()
+    col1, col2 = st.columns(2)
+    with col1:
+        if st.button("Proceed to Hospital Notification"):
+            st.session_state.step = 4
+            st.rerun()
+    with col2:
+        if st.button("Back"):
+            st.session_state.step = 2
+            st.rerun()
 
 # Step 4: Notify Hospital
 elif st.session_state.step == 4:
@@ -206,7 +218,7 @@ elif st.session_state.step == 4:
             time.sleep(2)
             st.session_state.hospital_notified = True
             
-    st.success(f"🏥 {hospital['name']} has been notified and is preparing for arrival!")
+    st.success(f"🏥 Hospital Notified: {hospital['name']} is ready for arrival!")
     
     st.markdown("<div class='info-card'>", unsafe_allow_html=True)
     st.write("### Digital Handover Report")
@@ -217,10 +229,16 @@ elif st.session_state.step == 4:
     st.write("**Vitals Shared:** HR: 98bpm, SpO2: 94%, BP: 130/85")
     st.markdown("</div>", unsafe_allow_html=True)
     
-    if st.button("Finish Demo / Reset"):
-        st.session_state.step = 1
-        st.session_state.hospital_notified = False
-        st.rerun()
+    col1, col2 = st.columns(2)
+    with col1:
+        if st.button("Finish Demo / Reset"):
+            st.session_state.step = 1
+            st.session_state.hospital_notified = False
+            st.rerun()
+    with col2:
+        if st.button("Back"):
+            st.session_state.step = 3
+            st.rerun()
 
 # Sidebar Info
 st.sidebar.image("https://img.icons8.com/color/96/000000/ambulance.png", width=100)
