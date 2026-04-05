@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
-import { apiRequest } from '../../services/api';
+import React, { useState, useEffect } from 'react';
+import { apiRequest, simulateEmergency } from '../../services/api';
+import { hasFeature } from '../../config/plans';
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import L from 'leaflet';
 import EmergencyPanel from '../EmergencyPanel';
@@ -52,9 +53,19 @@ const createCinematicMarker = (status) => L.divIcon({
   popupAnchor: [0, -36],
 });
 
-export default function DashboardView({ ambulances, events, hospitals, theme }) {
+export default function DashboardView({ ambulances, events, hospitals, theme, onSimulate, simulationCount, activeCount, userPlan: globalUserPlan }) {
   const [panelOpen, setPanelOpen] = useState(true);
+  const [userPlan, setUserPlan] = useState(globalUserPlan || "free");
   const mapCenter = [16.5062, 80.6480];
+
+  useEffect(() => {
+    const handlePlanChange = () => {
+      setUserPlan(localStorage.getItem('userPlan') || 'free');
+    };
+    handlePlanChange();
+    window.addEventListener('planChanged', handlePlanChange);
+    return () => window.removeEventListener('planChanged', handlePlanChange);
+  }, []);
 
   const tileUrl = theme === 'light' 
     ? "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
@@ -77,49 +88,65 @@ export default function DashboardView({ ambulances, events, hospitals, theme }) 
             attribution='&copy; <a href="https://carto.com/">CARTO</a>'
             url={tileUrl}
           />
-          {ambulances.map((amb) => (
-            <Marker
-              key={amb.id}
-              position={[amb.location.lat, amb.location.lon]}
-              icon={createCinematicMarker(amb.status)}
-            >
-              <Popup>
-                <div className="popup-inner">
-                  <strong className="popup-id">{amb.id}</strong>
-                  <span className={`popup-status popup-status-${amb.status.toLowerCase()}`}>
-                    {amb.status}
-                  </span>
-                  {amb.status === 'BUSY' && (
-                    <div className="popup-details">
-                      <span>🏥 {amb.hospital}</span>
-                      <span>⚡ {amb.speed} km/h · ETA {amb.eta} min</span>
-                    </div>
-                  )}
-                </div>
-              </Popup>
-            </Marker>
-          ))}
+          {ambulances.map((amb) => {
+            const position = amb.location && typeof amb.location.lat === 'number' && typeof amb.location.lon === 'number' 
+              ? [amb.location.lat, amb.location.lon] 
+              : null;
+            
+            if (!position) return null;
 
-          {hospitals && hospitals.map((hos) => (
-            <Marker
-              key={hos.id}
-              position={[hos.location.lat, hos.location.lon]}
-              icon={createHospitalMarker()}
-            >
-              <Popup>
-                <div className="popup-inner">
-                  <strong className="popup-id">{hos.name}</strong>
-                  <div className="popup-status" style={{ background: 'rgba(34, 197, 94, 0.1)', color: '#2ecc71', border: '1px solid rgba(34, 197, 94, 0.2)' }}>
-                    HOSPITAL FACILITY
+            return (
+              <Marker
+                key={amb.id}
+                position={position}
+                icon={createCinematicMarker(amb.status || 'IDLE')}
+              >
+                <Popup>
+                  <div className="popup-inner">
+                    <strong className="popup-id">{amb.name || amb.id}</strong>
+                    <span className={`popup-status popup-status-${(amb.status || 'idle').toLowerCase()}`}>
+                      {amb.status}
+                    </span>
+                    {(amb.status === 'BUSY' || amb.status === 'EN_ROUTE') && (
+                      <div className="popup-details">
+                        <span>🚑 {amb.number}</span>
+                        <span>📍 {amb.location.name}</span>
+                      </div>
+                    )}
                   </div>
-                  <div className="popup-details text-xs">
-                    <span>🚑 Available Units: {hos.units}</span>
-                    <span>📍 {hos.location.lat.toFixed(4)}, {hos.location.lon.toFixed(4)}</span>
+                </Popup>
+              </Marker>
+            );
+          })}
+
+          {hospitals && hospitals.map((hos) => {
+            const position = hos.location && typeof hos.location.lat === 'number' && typeof hos.location.lon === 'number'
+              ? [hos.location.lat, hos.location.lon]
+              : null;
+              
+            if (!position) return null;
+
+            return (
+              <Marker
+                key={hos.id}
+                position={position}
+                icon={createHospitalMarker()}
+              >
+                <Popup>
+                  <div className="popup-inner">
+                    <strong className="popup-id">{hos.name}</strong>
+                    <div className="popup-status" style={{ background: 'rgba(34, 197, 94, 0.1)', color: '#2ecc71', border: '1px solid rgba(34, 197, 94, 0.2)' }}>
+                      HOSPITAL FACILITY
+                    </div>
+                    <div className="popup-details text-xs">
+                      <span>🚑 Available Units: {hos.units}</span>
+                      <span>📍 {hos.location.lat.toFixed(4)}, {hos.location.lon.toFixed(4)}</span>
+                    </div>
                   </div>
-                </div>
-              </Popup>
-            </Marker>
-          ))}
+                </Popup>
+              </Marker>
+            );
+          })}
         </MapContainer>
         {/* Cinematic edge-fade vignette — pointer-events:none so map stays interactive */}
         <div className="dash-map-vignette" />
@@ -162,24 +189,29 @@ export default function DashboardView({ ambulances, events, hospitals, theme }) 
             <span className="gs-dot" />
             <h3 className="gs-title">Live Incidents</h3>
             <span className="gs-badge">{events.length}</span>
-            <button 
-                onClick={async () => {
-                    try {
-                        await apiRequest('/emergency', {
-                            method: 'POST',
-                            body: JSON.stringify({ type: 'HEART_ATTACK', location: (40.7 + (Math.random()-0.5)*0.1).toFixed(4) + ', ' + (-74.0 + (Math.random()-0.5)*0.1).toFixed(4), region_id: 1 })
-                        });
-                    } catch (e) {
-                        alert(e.message);
+            <div style={{ marginLeft: 'auto', display: 'flex', gap: '8px', alignItems: 'center' }}>
+              {!hasFeature(userPlan, "simulation") && (
+                <span className="limit-warning" style={{ fontSize: '11px', color: '#ff4d4d', marginRight: '4px' }}>
+                  🔒 Available in Pro
+                </span>
+              )}
+              <button 
+                  disabled={!hasFeature(userPlan, "simulation")}
+                  onClick={async () => { 
+                    if (onSimulate) {
+                      await onSimulate();
+                    } else {
+                      try { await simulateEmergency(); } catch(e) {}
                     }
-                }}
-                style={{ marginLeft: 'auto', background: 'var(--accent)', color: 'white', padding: '4px 8px', borderRadius: '4px', fontSize: '0.75rem', cursor: 'pointer', border: 'none' }}
-            >
-                + SIMULATE
-            </button>
+                  }}
+                  style={{ background: 'var(--accent)', color: 'white', padding: '4px 12px', borderRadius: '4px', fontSize: '0.75rem', cursor: hasFeature(userPlan, "simulation") ? 'pointer' : 'not-allowed', border: 'none', transition: '0.2s', opacity: hasFeature(userPlan, "simulation") ? 1 : 0.5, fontWeight: 'bold' }}
+              >
+                  ▶ START SIMULATION
+              </button>
+            </div>
           </div>
           <div className="glass-section-body">
-            <EmergencyPanel events={events} />
+            <EmergencyPanel events={events} userPlan={userPlan} />
           </div>
         </div>
 

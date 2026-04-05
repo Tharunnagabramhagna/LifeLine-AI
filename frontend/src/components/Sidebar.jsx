@@ -4,9 +4,11 @@ export default function Sidebar({ activeMenu, setActiveMenu, isOpen, theme, onTo
   const menu = [
     { name: "Dashboard", icon: "📊" },
     { name: "Ambulances", icon: "🚑" },
-    { name: "Requests", icon: "🚨" },
+    { name: "Emergency Log", icon: "🚨" },
     { name: "Analytics", icon: "📈" },
+    { name: "Subscription", icon: "💎" },
     { name: "Settings", icon: "⚙️" },
+
   ];
 
   return (

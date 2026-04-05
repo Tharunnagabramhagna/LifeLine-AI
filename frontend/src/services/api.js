@@ -1,6 +1,7 @@
 // services/api.js
 
-const BASE_URL = `${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api`;
+console.log("ENV CHECK:", import.meta.env.VITE_API_URL);
+const BASE_URL = "http://localhost:5005/api";
 
 export const apiRequest = async (endpoint, options = {}) => {
     const token = localStorage.getItem('token');
@@ -12,23 +13,34 @@ export const apiRequest = async (endpoint, options = {}) => {
 
     const response = await fetch(`${BASE_URL}${endpoint}`, { ...options, headers });
     
+    const text = await response.text();
+    let data;
+    try {
+        data = JSON.parse(text);
+    } catch (err) {
+        console.error("RAW RESPONSE:", text);
+        throw new Error("Server returned HTML instead of JSON. Check API URL.");
+    }
+    
     if (response.status === 401) {
         localStorage.removeItem('token');
         localStorage.removeItem('user');
-        window.location.reload();
-        throw new Error('Session expired, please login again');
+        window.dispatchEvent(new CustomEvent('session-expired'));
+        throw new Error(data.message || 'Session expired, please login again');
     }
     
     if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.message || 'API request failed');
+        throw new Error(data.error || data.message || 'API request failed');
     }
     
-    return response.json();
+    return data;
 };
 
 export const getAmbulances = () => apiRequest('/ambulances');
-export const getEvents = () => apiRequest('/events');
+export const getEvents = () => {
+    const plan = localStorage.getItem('userPlan') || 'free';
+    return apiRequest(`/events?plan=${plan}`);
+};
 
 // Maintain hospitals mock for the frontend maps since backend doesn't have it natively
 export const getHospitals = async () => {
@@ -40,4 +52,17 @@ export const getHospitals = async () => {
       { id: "HOSP-05", name: "Medicover Hospital", location: { lat: 16.5280, lon: 80.6050 }, units: 10 },
       { id: "HOSP-06", name: "NRI Hospital",       location: { lat: 16.4880, lon: 80.6900 }, units: 7 },
     ];
+};
+
+export const createEmergency = async (data) => {
+    return apiRequest('/emergency', {
+        method: 'POST',
+        body: JSON.stringify(data)
+    });
+};
+
+export const simulateEmergency = async () => {
+    return apiRequest('/simulate', {
+        method: 'POST'
+    });
 };

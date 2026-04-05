@@ -1,12 +1,48 @@
 import React, { useState, useEffect } from 'react';
 import { getAmbulances } from '../../services/api';
+import { socket } from '../../socket';
 
 const FUEL = [95, 72, 88, 61, 79, 54, 90, 67];
 
 export default function AmbulancesView() {
   const [fleet, setFleet] = useState([]);
+  const [recentUpdates, setRecentUpdates] = useState(new Set());
+  
+  const BASE_URL = "http://localhost:5005/api";
+
   useEffect(() => {
-    getAmbulances().then(setFleet).catch(console.error);
+    const fetchAmbulances = async () => {
+      try {
+        const res = await fetch(`${BASE_URL}/ambulances`);
+        const data = await res.json();
+        setFleet(Array.isArray(data) ? data : []);
+      } catch (err) {
+        console.error(err);
+      }
+    };
+    fetchAmbulances();
+
+    socket.on("ambulance:update", (updated) => {
+      setFleet(prev =>
+        prev.map(a => a.id === updated.id ? updated : a)
+      );
+      if (updated.status !== 'IDLE') {
+        setRecentUpdates(prev => {
+          const next = new Set(prev);
+          next.add(updated.id);
+          return next;
+        });
+        setTimeout(() => {
+          setRecentUpdates(prev => {
+            const next = new Set(prev);
+            next.delete(updated.id);
+            return next;
+          });
+        }, 3000);
+      }
+    });
+
+    return () => socket.off("ambulance:update");
   }, []);
   
   const busyCount = fleet.filter(u => u.status !== 'AVAILABLE' && u.status !== 'IDLE').length;
@@ -29,9 +65,10 @@ export default function AmbulancesView() {
         {fleet.map((unit, index) => {
           const isBusy = (unit.status !== 'AVAILABLE' && unit.status !== 'IDLE');
           const fuel = FUEL[index % FUEL.length];
+          const isRecentlyAssigned = recentUpdates.has(unit.id);
 
           return (
-            <div key={unit.id} className="floating-card" style={{ padding: '1.25rem' }}>
+            <div key={unit.id} className="floating-card" style={{ padding: '1.25rem', border: isRecentlyAssigned ? '1px solid #ff4d4d' : undefined, animation: isRecentlyAssigned ? 'pulse 1.5s infinite' : undefined }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
                 <div style={{ flex: 1, paddingRight: '1rem' }}>
                   {/* Unit name */}
@@ -53,7 +90,7 @@ export default function AmbulancesView() {
                     transition: 'all 0.4s ease',
                     letterSpacing: '0.06em'
                   }}>
-                    {isBusy ? '🔴 BUSY' : '🟢 AVAILABLE'}
+                    {isBusy ? '🔴 BUSY' : '🟢 IDLE'}
                   </span>
                 </div>
 

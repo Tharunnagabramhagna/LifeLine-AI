@@ -1,4 +1,9 @@
-:root, [data-theme='dark'] {
+:root {
+  --text-primary: #ffffff;
+  --text-secondary: #aaaaaa;
+}
+
+.dark-theme, [data-theme='dark'] {
   --bg-primary: #0a0a0a;
   --bg-secondary: #111111;
   --bg-tertiary: #161616;
@@ -29,7 +34,7 @@
   --glass-blur:       28px;
 }
 
-[data-theme='light'] {
+.light-theme, [data-theme='light'] {
   --bg-primary:   #f5f7fa;
   --bg-secondary: #ffffff;
   --bg-tertiary:  #f0f2f5;

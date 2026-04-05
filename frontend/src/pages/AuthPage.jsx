@@ -1,124 +1,63 @@
-import React, { useState, useEffect } from 'react';
-import { apiRequest } from '../services/api';
+import React, { useState } from 'react';
+import SignIn from '../components/auth/SignIn';
+import SignUp from '../components/auth/SignUp';
 
 export default function AuthPage({ onAuthSuccess, theme, onToggleTheme }) {
   const [isSignIn, setIsSignIn] = useState(true);
-  const [formData, setFormData] = useState({ 
-    name: '',
-    email: '', 
-    password: '',
-    confirmPassword: ''
-  });
-  const [error, setError] = useState('');
-
-  const handleInputChange = (e) => {
-    setFormData({ ...formData, [e.target.id]: e.target.value });
-    if (error) setError('');
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setError('');
-    
-    try {
-        if (isSignIn) {
-            if (!formData.email || !formData.password) return setError('Credentials required.');
-            const res = await apiRequest('/login', { method: 'POST', body: JSON.stringify({ email: formData.email, password: formData.password }) });
-            localStorage.setItem('token', res.token);
-            onAuthSuccess({ email: res.user.email, name: res.user.username || "Operator", role: "Dispatcher" });
-        } else {
-            if (!formData.name || !formData.email || !formData.password) return setError('All fields required.');
-            await apiRequest('/signup', { method: 'POST', body: JSON.stringify({ username: formData.name, email: formData.email, password: formData.password }) });
-            const res = await apiRequest('/login', { method: 'POST', body: JSON.stringify({ email: formData.email, password: formData.password }) });
-            localStorage.setItem('token', res.token);
-            onAuthSuccess({ email: res.user.email, name: res.user.username || "Operator", role: "Dispatcher" });
-        }
-    } catch (err) {
-        setError(err.message);
-    }
-  };
 
   return (
-    <div className="auth-root">
-      <div className="auth-bg-ambient"></div>
-      
+    <div className="auth-root" style={{
+      backgroundImage: 'url("/auth-bg.png")',
+      backgroundSize: 'cover',
+      backgroundPosition: 'center',
+      position: 'relative',
+      height: '100vh',
+      width: '100vw',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      overflow: 'hidden'
+    }}>
+      {/* Ambient Overlay - Lighter to ensure true glass refraction works */}
+      <div style={{
+        position: 'absolute',
+        inset: 0,
+        backgroundColor: 'rgba(0, 0, 0, 0.3)',
+        backdropFilter: 'blur(4px)',
+        zIndex: 0
+      }} />
+
+      {/* Auth Container */}
+      <div className="auth-panel-container" style={{ position: 'relative', zIndex: 10 }}>
+        {isSignIn ? (
+          <SignIn 
+            onToggleView={() => setIsSignIn(false)} 
+            onAuthSuccess={onAuthSuccess} 
+          />
+        ) : (
+          <SignUp 
+            onToggleView={() => setIsSignIn(true)} 
+            onAuthSuccess={onAuthSuccess} 
+          />
+        )}
+      </div>
+
+      {/* Theme Toggle Button (Maintain existing style) */}
       <button className="auth-theme-toggle" onClick={onToggleTheme} title="Toggle System Theme">
         {theme === 'dark' ? '🌙' : '☀️'}
       </button>
 
-      <div className="auth-panel-container">
-        <div className="floating-card auth-panel cinematic-shimmer">
-          <div className="auth-header">
-            <div className="auth-logo">🚑</div>
-            <h1 className="auth-title">LifeLine AI</h1>
-            <p className="auth-subtitle">Emergency Dispatch Protocol</p>
-            <p className="auth-meta-text">Secure Operator Terminal v3.2.0</p>
-          </div>
-
-          <div className="auth-tabs">
-            <div className={`tab-indicator ${!isSignIn ? 'right' : ''}`}></div>
-            <button 
-              className={`auth-tab ${isSignIn ? 'active' : ''}`}
-              onClick={() => setIsSignIn(true)}
-            >
-              OPERATOR SIGN IN
-            </button>
-            <button 
-              className={`auth-tab ${!isSignIn ? 'active' : ''}`}
-              onClick={() => setIsSignIn(false)}
-            >
-              NEW REGISTRATION
-            </button>
-          </div>
-
-          <form className="auth-form" onSubmit={handleSubmit}>
-            {!isSignIn && (
-              <div className="input-group">
-                <label htmlFor="name">Full Name</label>
-                <input
-                  type="text"
-                  id="name"
-                  placeholder="Enter full name"
-                  value={formData.name}
-                  onChange={handleInputChange}
-                />
-              </div>
-            )}
-
-            <div className="input-group">
-              <label htmlFor="email">Operator Email</label>
-              <input
-                type="email"
-                id="email"
-                placeholder="operator@lifeline.ai"
-                value={formData.email}
-                onChange={handleInputChange}
-              />
-            </div>
-
-            <div className="input-group">
-              <label htmlFor="password">Access Key</label>
-              <input
-                type="password"
-                id="password"
-                placeholder="••••••••"
-                value={formData.password}
-                onChange={handleInputChange}
-              />
-            </div>
-
-            {error && <div className="auth-message error">{error}</div>}
-
-            <button type="submit" className="auth-submit-btn anti-gravity-btn">
-              {isSignIn ? 'INITIALIZE SESSION' : 'REGISTER TERMINAL'}
-            </button>
-          </form>
-
-          <div className="auth-footer">
-            <span style={{ fontSize: '0.65rem' }}>🔐 End-to-End Encrypted</span>
-            <span style={{ fontSize: '0.65rem', color: 'var(--accent)' }}>System Status: Online</span>
-          </div>
-        </div>
+      {/* Floating System Info Footer */}
+      <div className="auth-footer-overlay" style={{
+        position: 'absolute',
+        bottom: '2rem',
+        width: '100%',
+        textAlign: 'center',
+        color: 'rgba(255, 255, 255, 0.4)',
+        fontSize: '0.75rem',
+        letterSpacing: '0.1em'
+      }}>
+        TERMINAL SECURE | VERSION 3.2.0 | SYSTEM ONLINE
       </div>
     </div>
   );

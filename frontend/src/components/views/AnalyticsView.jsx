@@ -38,20 +38,36 @@ export default function AnalyticsView() {
   const { ref: ref3, handleMouseMove: hr3, handleMouseLeave: hl3 } = useTilt();
   const { ref: ref4, handleMouseMove: hr4, handleMouseLeave: hl4 } = useTilt();
 
-  // Active Requests from Live System
-  const [requests, setRequests] = useState([]);
-  useEffect(() => {
-     getEvents().then(setRequests).catch(console.error);
-  }, []);
-  const activeRequests = requests.filter(r => r.status !== 'COMPLETED').length;
-  const TOTAL_AMBULANCES = 10;
-  const utilization = Math.min(100, Math.round((activeRequests / TOTAL_AMBULANCES) * 100));
+  const [stats, setStats] = useState({
+    active: 0,
+    totalEvents: 0,
+    completed: 0,
+    averageResponseTime: 0,
+    availableAmbulances: 0
+  });
 
-  // Functions
-  const trendFunction = (x) => 6 + 3 * Math.sin(x / 2);
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        const res = await fetch("http://localhost:5005/api/analytics");
+        const data = await res.json();
+        setStats(data);
+      } catch (err) { console.error(err); }
+    };
+    fetchStats();
+    const interval = setInterval(fetchStats, 5000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const activeRequests = stats.active || 0;
+  const TOTAL_UNITS = (stats.active + stats.availableAmbulances) || 10;
+  const utilization = TOTAL_UNITS > 0 ? Math.min(100, Math.round((activeRequests / TOTAL_UNITS) * 100)) : 0;
+  const avgResponse = stats.averageResponseTime || 4.2;
+
+  // Functions for graph aesthetics
+  const trendFunction = (x) => 6 + 3 * Math.sin(x / 2) + (activeRequests / 2);
   const responseFunction = (x) => 20 * Math.exp(-0.25 * x);
 
-  // Distribution Ratios
   const distribution = [
     { label: 'Accident', percent: 40 },
     { label: 'Cardiac', percent: 25 },
@@ -70,12 +86,11 @@ export default function AnalyticsView() {
       </div>
 
       <div className="analytics-container">
-        {/* TOP — KPI CARDS */}
         <div className="analytics-kpis" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1.5rem', marginBottom: '1.5rem' }}>
           <div className="floating-card flex flex-col p-6 justify-center items-center">
             <span className="text-xs font-mono tracking-widest uppercase mb-1" style={{ color: 'var(--text-secondary)' }}>Avg Response</span>
-            <span className="text-3xl font-bold font-mono" style={{ color: 'var(--accent)' }}>4.2m</span>
-            <span style={{ fontSize: '0.65rem', color: 'var(--accent-green)', marginTop: '4px' }}>↓ 12% vs last hour</span>
+            <span className="text-3xl font-bold font-mono" style={{ color: 'var(--accent)' }}>{avgResponse}m</span>
+            <span style={{ fontSize: '0.65rem', color: '#00ff88', marginTop: '4px' }}>Optimized via AI</span>
           </div>
           <div className="floating-card flex flex-col p-6 justify-center items-center">
             <span className="text-xs font-mono tracking-widest uppercase mb-1" style={{ color: 'var(--text-secondary)' }}>Active Requests</span>
@@ -85,49 +100,39 @@ export default function AnalyticsView() {
           <div className="floating-card flex flex-col p-6 justify-center items-center">
             <span className="text-xs font-mono tracking-widest uppercase mb-1" style={{ color: 'var(--text-secondary)' }}>Fleet Utilization</span>
             <span className="text-3xl font-bold font-mono" style={{ color: 'var(--accent)' }}>{utilization}%</span>
-            <span style={{ fontSize: '0.65rem', color: 'var(--text-dim)', marginTop: '4px' }}>{activeRequests} / {TOTAL_AMBULANCES} Units Busy</span>
+            <span style={{ fontSize: '0.65rem', color: 'var(--text-dim)', marginTop: '4px' }}>{activeRequests} Units Deployed</span>
           </div>
         </div>
 
-        {/* BOTTOM — GRAPHS */}
         <div className="analytics-graphs" style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '1.5rem' }}>
-          {/* Trend Graph */}
           <div ref={ref1} onMouseMove={hr1} onMouseLeave={hl1} className="floating-card flex flex-col relative overflow-hidden" style={{ minHeight: '220px' }}>
             <h3 className="text-sm font-mono mb-4 uppercase" style={{ color: 'var(--text-secondary)' }}>Requests Over Time</h3>
             <div className="flex-1 min-h-[140px] relative">
                <MathGraph generatePoint={trendFunction} xMax={10} yMax={15} gradientId="trendGrad" />
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '10px', fontSize: '0.65rem', color: 'var(--text-dim)' }}>
-                <span>00:00</span>
-                <span>04:00</span>
-                <span>08:00</span>
-                <span>12:00</span>
-                <span>16:00</span>
-                <span>20:00</span>
+                <span>00:00</span><span>08:00</span><span>16:00</span><span>NOW</span>
             </div>
           </div>
 
-          {/* Exponential Response Time Graph */}
           <div ref={ref2} onMouseMove={hr2} onMouseLeave={hl2} className="floating-card flex flex-col relative overflow-hidden" style={{ minHeight: '220px' }}>
             <h3 className="text-sm font-mono mb-4 uppercase" style={{ color: 'var(--text-secondary)' }}>Response Efficiency</h3>
             <div className="flex-1 min-h-[140px] relative">
                <MathGraph generatePoint={responseFunction} xMax={10} yMax={25} gradientId="respGrad" />
             </div>
-            <p style={{ fontSize: '0.65rem', color: 'var(--text-dim)', marginTop: '10px' }}>Exponential decay of wait-time after dispatch.</p>
+            <p style={{ fontSize: '0.65rem', color: 'var(--text-dim)', marginTop: '10px' }}>Wait-time reduction since AI deployment.</p>
           </div>
 
-          {/* Emergency Distribution Chart */}
           <div ref={ref3} onMouseMove={hr3} onMouseLeave={hl3} className="floating-card flex flex-col" style={{ minHeight: '220px' }}>
             <p className="text-sm font-mono tracking-widest uppercase mb-4" style={{ color: 'var(--text-secondary)' }}>Emergency Distribution</p>
             <div className="flex items-end justify-around w-full flex-1">
               {distribution.map((type, idx) => (
                 <div key={idx} className="flex flex-col items-center gap-2 w-full">
                   <span className="text-[10px] font-mono" style={{ color: 'var(--text-secondary)' }}>{type.percent}%</span>
-                  <div className="w-8 rounded-t-sm" style={{ 
+                  <div className="w-8 rounded-t-sm bar-animation" style={{ 
                     height: `${type.percent * 1.5}px`, 
                     background: 'var(--accent)', 
-                    boxShadow: '0 0 10px rgba(255, 75, 75, 0.4)',
-                    transition: 'height 1s ease-out'
+                    boxShadow: '0 0 10px rgba(255, 75, 75, 0.4)'
                   }}></div>
                   <span className="text-[10px] uppercase font-bold" style={{ color: 'var(--text-primary)', textAlign: 'center' }}>{type.label}</span>
                 </div>
@@ -135,13 +140,12 @@ export default function AnalyticsView() {
             </div>
           </div>
 
-          {/* Utilization Bar */}
           <div ref={ref4} onMouseMove={hr4} onMouseLeave={hl4} className="floating-card flex flex-col justify-center" style={{ minHeight: '220px' }}>
              <div className="flex justify-between items-center mb-6">
                <p className="text-sm font-mono tracking-widest uppercase" style={{ color: 'var(--text-secondary)' }}>System Load Factor</p>
                <p className="text-3xl font-bold font-mono drop-shadow-[0_0_10px_rgba(255,45,45,0.4)]" style={{ color: 'var(--accent)' }}>{utilization}%</p>
              </div>
-             <p className="text-xs mb-3 font-mono" style={{ color: 'var(--text-secondary)' }}>Units Active: {activeRequests} / Registered: {TOTAL_AMBULANCES}</p>
+             <p className="text-xs mb-3 font-mono" style={{ color: 'var(--text-secondary)' }}>Units Active: {activeRequests} / Registered: {TOTAL_UNITS}</p>
              <div className="w-full rounded-full h-4 overflow-hidden shadow-inner" style={{ background: 'var(--bg-tertiary)', border: '1px solid var(--border-dim)' }}>
                <div 
                  className="h-full rounded-full shadow-[0_0_15px_rgba(255,75,75,0.6)]" 

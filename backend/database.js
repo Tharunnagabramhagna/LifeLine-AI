@@ -15,7 +15,10 @@ db.exec(`
   CREATE TABLE IF NOT EXISTS events (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     type TEXT NOT NULL,
+    severity TEXT DEFAULT 'MEDIUM',
     location TEXT NOT NULL,
+    lat REAL,
+    lon REAL,
     region_id INTEGER NOT NULL,
     status TEXT DEFAULT 'PENDING',
     ambulance_id INTEGER,
@@ -27,7 +30,11 @@ db.exec(`
 
   CREATE TABLE IF NOT EXISTS ambulances (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT,
+    number TEXT,
     location TEXT NOT NULL,
+    lat REAL,
+    lon REAL,
     region_id INTEGER NOT NULL,
     status TEXT DEFAULT 'IDLE',
     FOREIGN KEY (region_id) REFERENCES regions(id)
@@ -35,10 +42,24 @@ db.exec(`
 
   CREATE TABLE IF NOT EXISTS users (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    username TEXT NOT NULL,
-    email TEXT UNIQUE NOT NULL,
-    password TEXT NOT NULL
+    name TEXT,
+    email TEXT UNIQUE,
+    password TEXT,
+    plan TEXT DEFAULT 'FREE',
+    simulation_count INTEGER DEFAULT 0
   );
+
+
+  CREATE TABLE IF NOT EXISTS hospitals (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    lat REAL,
+    lon REAL,
+    region_id INTEGER NOT NULL,
+    units INTEGER DEFAULT 0,
+    FOREIGN KEY (region_id) REFERENCES regions(id)
+  );
+
 `);
 
 module.exports = db;

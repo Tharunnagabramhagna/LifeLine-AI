@@ -1,0 +1,96 @@
+.subscription-card {
+  border-radius: 16px;
+  padding: 30px 20px;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.1);
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+}
+
+.subscription-card:hover {
+  transform: translateY(-5px);
+  background: rgba(255,255,255,0.08);
+  box-shadow: 0 8px 30px rgba(0,0,0,0.3);
+}
+
+.active-plan {
+  border: 2px solid #ff4d4d;
+  background: rgba(255,77,77,0.05);
+}
+
+.popular-plan {
+  border-color: rgba(255,77,77,0.5);
+}
+
+.popular-badge {
+  position: absolute;
+  top: -12px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #ff4d4d;
+  color: white;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+.plan-name {
+  font-size: 20px;
+  font-weight: 700;
+  color: white;
+  margin-bottom: 8px;
+  text-align: center;
+}
+
+.plan-price {
+  font-size: 28px;
+  font-weight: 800;
+  color: #ff4d4d;
+  text-align: center;
+  margin-bottom: 24px;
+}
+
+.plan-features {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 30px 0;
+  flex: 1;
+}
+
+.plan-features li {
+  color: rgba(255,255,255,0.8);
+  font-size: 14px;
+  margin-bottom: 12px;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.plan-button {
+  background: linear-gradient(135deg, #ff4d4d, #ff1a1a);
+  color: white;
+  border: none;
+  padding: 12px;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  width: 100%;
+  transition: 0.2s;
+}
+
+.plan-button:hover:not(:disabled) {
+  opacity: 0.9;
+  transform: scale(1.02);
+}
+
+.plan-button.current-btn {
+  background: rgba(255,255,255,0.1);
+  color: rgba(255,255,255,0.5);
+  cursor: default;
+}

@@ -1,19 +1,24 @@
-import React from 'react';
+import React, { useRef, useEffect } from 'react';
 import EventCard from './EventCard'; 
 
-export default function EmergencyPanel({ events = [] }) {
-  const requests = events;
+export default function EmergencyPanel({ events = [], userPlan = "free" }) {
+  const normalizedPlan = (userPlan || "free").toLowerCase();
+  const visibleEvents = normalizedPlan === "free" ? events.slice(0, 5) : events;
+  const requests = visibleEvents;
   const activityFeed = [];
+  const listRef = useRef(null);
+
+  useEffect(() => {
+    if (listRef.current && events.length > 0 && events[0].isNew) {
+      listRef.current.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  }, [events]);
 
   return (
     <div className="h-full flex flex-col pt-1">
       <h2 className="panel-title mb-3">Emergency Requests</h2>
-      <div className="emergency-list flex-1 overflow-y-auto pr-2 space-y-3 mb-4">
-        {requests.length === 0 ? (
-          <div className="empty-state">No active requests</div>
-        ) : (
-          requests.map(evt => <EventCard key={evt.id} event={evt} onAssign={() => {}} />)
-        )}
+      <div ref={listRef} className="emergency-list flex-1 overflow-y-auto pr-2 space-y-3 mb-4 scroll-smooth">
+        {requests.map(evt => <EventCard key={evt.id} event={evt} userPlan={userPlan} onAssign={() => {}} />)}
       </div>
 
       {/* Activity Feed Section */}
