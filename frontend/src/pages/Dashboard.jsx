@@ -52,7 +52,7 @@ export default function Dashboard({ user, theme, onToggleTheme, onLogout }) {
   useEffect(() => {
     loadData();
 
-    const socket = io('http://localhost:5000');
+    const socket = io(import.meta.env.VITE_API_URL || 'http://localhost:5000');
     socket.on('new-emergency', loadData);
     socket.on('ambulance-assigned', loadData);
     socket.on('event-completed', loadData);
