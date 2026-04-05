@@ -1,0 +1,15 @@
+  feature-alerts
+  feature-map-api
+  feature-map-api-final
+  feature-moham-frontend
+  frontend-integration
+* frontend-replacement
+  main
+  remotes/origin/HEAD -> origin/main
+  remotes/origin/feature-alerts
+  remotes/origin/feature-map-api
+  remotes/origin/feature-map-api-final
+  remotes/origin/feature-moham-frontend
+  remotes/origin/feature-sahit
+  remotes/origin/feature-testing
+  remotes/origin/main

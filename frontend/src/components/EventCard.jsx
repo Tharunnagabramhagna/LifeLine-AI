@@ -1,105 +1,162 @@
-import React from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
+import { useTilt } from '../hooks/useTilt';
 import { apiRequest } from '../services/api';
 
-const EventCard = ({ event, onComplete }) => {
-    const statusColors = {
-        'PENDING': '#f39c12',
-        'ASSIGNED': '#3498db',
-        'EN_ROUTE': '#e67e22',
-        'COMPLETED': '#27ae60'
-    };
+// Deterministic AI suggestion from request seed
+const AI_UNITS = ['A-12', 'A-08', 'A-23', 'A-47', 'A-31', 'A-55'];
+const AI_ROUTES = ['Traffic Optimized', 'Highway Fast Lane', 'Back Streets Clear', 'GPS Rerouted'];
+const AI_CONFIDENCE = [92, 87, 95, 89, 91, 84];
 
-    const handleFinishTrip = async () => {
-        try {
-            const data = await apiRequest(`/complete/${event.id}`, {
-                method: 'POST'
-            });
-            if (data.success) {
-                if (onComplete) onComplete(event.id);
-            }
-        } catch (error) {
-            alert(error.message);
-            console.error("Failed to finish trip:", error);
-        }
-    };
+function getAiSuggestion(requestId) {
+  const seed = parseInt(requestId.replace('REQ-', ''), 10) || 0;
+  const unitIdx = seed % AI_UNITS.length;
+  const routeIdx = seed % AI_ROUTES.length;
+  const confIdx = seed % AI_CONFIDENCE.length;
+  return {
+    unit: AI_UNITS[unitIdx],
+    route: AI_ROUTES[routeIdx],
+    confidence: AI_CONFIDENCE[confIdx],
+  };
+}
 
-    return (
-        <div className="event-card">
-            <div className="event-header">
-                <span className="event-type">{event.type.replace('_', ' ')}</span>
-                <span className="event-status" style={{ backgroundColor: statusColors[event.status] || '#95a5a6' }}>
-                    {event.status}
-                </span>
+const STATUS_CONFIG = {
+  Pending:    { color: '#f59e0b', label: '⏳ PENDING' },
+  Assigned:   { color: '#3b82f6', label: '📡 ASSIGNED' },
+  'In Transit': { color: '#8b5cf6', label: '🚑 IN TRANSIT' },
+  Completed:  { color: '#22c55e', label: '✅ COMPLETED' },
+};
+
+const EventCard = ({ event, onAssign }) => {
+  const { ref, handleMouseMove, handleMouseLeave } = useTilt();
+  const severityLower = event.severity.toLowerCase();
+  const timeStr = new Date(event.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+  // Live elapsed timer
+  const [elapsed, setElapsed] = useState('');
+  useEffect(() => {
+    const update = () => {
+      const diffSecs = Math.floor((Date.now() - event.createdAt) / 1000);
+      const mins = Math.floor(diffSecs / 60).toString().padStart(2, '0');
+      const secs = (diffSecs % 60).toString().padStart(2, '0');
+      setElapsed(`${mins}:${secs}`);
+    };
+    update();
+    const intv = setInterval(update, 1000);
+    return () => clearInterval(intv);
+  }, [event.createdAt]);
+
+  const isCritical = event.severity === 'Critical';
+  const ai = useMemo(() => getAiSuggestion(event.id), [event.id]);
+  const statusCfg = STATUS_CONFIG[event.status] || STATUS_CONFIG['Pending'];
+
+  return (
+    <div
+      ref={ref}
+      className={`floating-card event-card ${severityLower} ${isCritical ? 'critical-pulse' : ''}`}
+      onMouseMove={handleMouseMove}
+      onMouseLeave={handleMouseLeave}
+      style={{ opacity: event.status === 'Completed' ? 0.5 : 1, transition: 'opacity 0.6s ease' }}
+    >
+      <div className="floating-inner">
+        {/* ── HEADER ROW ── */}
+        <div className="event-header">
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+            <div className={`event-badge ${severityLower}`} style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+              {isCritical && <span className="animate-ping" style={{ width: 6, height: 6, borderRadius: '50%', display: 'inline-block', background: 'var(--accent)' }} />}
+              [{event.severity}]
             </div>
-            <div className="event-body">
-                <p><strong>📍 Location:</strong> {event.location}</p>
-                <p><strong>🕒 Time:</strong> {new Date(event.timestamp).toLocaleString()}</p>
-                {event.ambulance_id && (
-                    <p className="assigned-info"><strong>🚑 Assigned:</strong> Ambulance #{event.ambulance_id}</p>
-                )}
-                {event.status !== 'COMPLETED' && (
-                    <button className="finish-btn" onClick={handleFinishTrip}>
-                        🏁 Finish Trip
-                    </button>
-                )}
-            </div>
-            <style jsx>{`
-                .event-card {
-                    background: #fff;
-                    border-radius: 8px;
-                    padding: 15px;
-                    margin-bottom: 15px;
-                    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-                    border-left: 5px solid #e74c3c;
-                }
-                .event-header {
-                    display: flex;
-                    justify-content: space-between;
-                    align-items: center;
-                    margin-bottom: 10px;
-                }
-                .event-type {
-                    font-weight: bold;
-                    color: #2c3e50;
-                    text-transform: uppercase;
-                    font-size: 0.9rem;
-                }
-                .event-status {
-                    color: #fff;
-                    padding: 3px 8px;
-                    border-radius: 4px;
-                    font-size: 0.75rem;
-                    font-weight: bold;
-                }
-                .event-body p {
-                    margin: 5px 0;
-                    font-size: 0.9rem;
-                    color: #555;
-                }
-                .assigned-info {
-                    color: #2980b9;
-                    font-weight: 500;
-                    margin-top: 10px !important;
-                }
-                .finish-btn {
-                    margin-top: 12px;
-                    width: 100%;
-                    padding: 8px;
-                    background: #2c3e50;
-                    color: #fff;
-                    border: none;
-                    border-radius: 4px;
-                    cursor: pointer;
-                    font-weight: 600;
-                    font-size: 0.85rem;
-                    transition: background 0.2s;
-                }
-                .finish-btn:hover {
-                    background: #34495e;
-                }
-            `}</style>
+            {/* Live timer */}
+            <span style={{ fontFamily: 'monospace', fontSize: '0.75rem', fontWeight: 'bold', color: 'var(--accent)' }}>
+              ⏱ {elapsed}
+            </span>
+            {/* Status badge */}
+            <span style={{
+              fontSize: '0.65rem', fontWeight: 700, padding: '2px 6px',
+              borderRadius: 4, border: `1px solid ${statusCfg.color}`,
+              color: statusCfg.color, letterSpacing: '0.04em'
+            }}>
+              {statusCfg.label}
+            </span>
+          </div>
+          <div className="event-title">{event.type}</div>
         </div>
-    );
+
+        {/* ── BODY ── */}
+        <div className="event-body" style={{ marginTop: '8px' }}>
+          <div style={{ color: 'var(--text-primary)', marginBottom: '6px' }}>📍 {event.location}</div>
+
+          {/* AI Suggestion */}
+          <div className="ai-suggestion-box" style={{ 
+            background: 'var(--bg-tertiary)', 
+            padding: '10px', 
+            borderRadius: '8px', 
+            marginTop: '10px',
+            border: '1px solid var(--border-glow)' 
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px' }}>
+              <span style={{ fontSize: '1.1rem' }}>🤖</span>
+              <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--accent)' }}>AI SUGGESTION</span>
+            </div>
+            <div style={{ fontSize: '0.85rem', fontWeight: 600 }}>
+              Ambulance {ai.unit} ({ai.confidence}% match)
+            </div>
+            <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', marginTop: '2px' }}>
+              Route: {ai.route}
+            </div>
+          </div>
+
+          {/* Footer row */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '12px' }}>
+            <span style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', fontFamily: 'monospace' }}>
+              CREATED: {timeStr}
+            </span>
+            <div>
+              {event.status !== 'COMPLETED' ? (
+                <button
+                  className="assign-btn"
+                  onClick={async () => {
+                      try {
+                          await apiRequest(`/complete/${event.id}`, { method: 'POST' });
+                      } catch (e) {
+                          alert(e.message);
+                      }
+                  }}
+                  style={{
+                    backgroundColor: 'var(--accent)',
+                    color: 'white',
+                    border: 'none',
+                    padding: '8px 16px',
+                    borderRadius: '6px',
+                    fontSize: '0.75rem',
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    transition: 'all 0.3s ease',
+                    boxShadow: '0 4px 12px rgba(255, 75, 75, 0.3)'
+                  }}
+                  onMouseOver={(e) => { e.target.style.transform = 'translateY(-2px)'; e.target.style.boxShadow = '0 6px 16px rgba(255, 75, 75, 0.4)'; }}
+                  onMouseOut={(e) => { e.target.style.transform = 'translateY(0)'; e.target.style.boxShadow = '0 4px 12px rgba(255, 75, 75, 0.3)'; }}
+                >
+                  🏁 FINISH TRIP
+                </button>
+              ) : (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <span style={{
+                    fontSize: '0.75rem', 
+                    fontWeight: 800,
+                    color: 'var(--accent-green)',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.05em'
+                  }}>
+                    ✓ Mission Completed
+                  </span>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 };
 
 export default EventCard;
