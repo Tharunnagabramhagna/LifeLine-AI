@@ -1,28 +1,24 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 export default function SplashScreen({ onComplete }) {
   const [isFinishing, setIsFinishing] = useState(false);
+  const navigate = useNavigate();
   const radius = 140;
   const circumference = 880;
 
   useEffect(() => {
-    // 4s total animation + 0.5s fade out
-    const fadeTimer = setTimeout(() => {
-      setIsFinishing(true);
-    }, 4000);
+    const timer = setTimeout(() => {
+      if (onComplete) onComplete();
+      navigate('/start');
+    }, 2000);
 
-    const unmountTimer = setTimeout(() => {
-      onComplete();
-    }, 4500);
-
-    return () => {
-      clearTimeout(fadeTimer);
-      clearTimeout(unmountTimer);
-    };
-  }, [onComplete]);
+    return () => clearTimeout(timer);
+  }, [navigate, onComplete]);
 
   return (
-    <div className={`apple-splash-wrapper ${isFinishing ? 'splash-fade-out' : ''}`}>
+    <div className="flex items-center justify-center min-h-screen bg-black text-white animate-fadeIn">
+
 
       {/* BACKGROUND IMAGE WRAPPER (Anti-Gravity Scale) */}
       <div className="splash-bg-container">

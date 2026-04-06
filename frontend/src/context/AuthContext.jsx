@@ -49,16 +49,14 @@ export const AuthProvider = ({ children }) => {
       const userData = {
         email: res.user.email,
         name: res.user.name || "Operator",
-        role: "Dispatcher",
-        plan: res.user.plan || 'FREE',
-        simulation_count: res.user.simulation_count || 0
+        role: "Dispatcher"
       };
       
       localStorage.setItem('token', res.token);
+      localStorage.setItem('userPlan', res.user.plan || 'FREE');
       localStorage.setItem('user', JSON.stringify(userData));
       setUser(userData);
       return userData;
-
     } catch (err) {
       setError(err.message);
       throw err;

@@ -6,18 +6,7 @@ export default function AuthPage({ onAuthSuccess, theme, onToggleTheme }) {
   const [isSignIn, setIsSignIn] = useState(true);
 
   return (
-    <div className="auth-root" style={{
-      backgroundImage: 'url("/auth-bg.png")',
-      backgroundSize: 'cover',
-      backgroundPosition: 'center',
-      position: 'relative',
-      height: '100vh',
-      width: '100vw',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      overflow: 'hidden'
-    }}>
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-black via-gray-900 to-black relative overflow-hidden">
       {/* Ambient Overlay - Lighter to ensure true glass refraction works */}
       <div style={{
         position: 'absolute',

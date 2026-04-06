@@ -23,13 +23,11 @@ const seedData = async () => {
 
         // Seed a default admin user for hackathon
         const hashedPassword = await bcrypt.hash('password123', 10);
-        db.prepare('INSERT INTO users (name, email, password, plan) VALUES (?, ?, ?, ?)').run(
+        db.prepare('INSERT INTO users (username, email, password) VALUES (?, ?, ?)').run(
             'Admin Dispatcher',
             'admin@lifeline.ai',
-            hashedPassword,
-            'ENTERPRISE'
+            hashedPassword
         );
-
 
         // Seed some sample events
         const insertEvent = db.prepare('INSERT INTO events (type, severity, location, lat, lon, region_id, status, timestamp) VALUES (?, ?, ?, ?, ?, ?, ?, ?)');

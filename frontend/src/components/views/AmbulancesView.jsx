@@ -8,7 +8,7 @@ export default function AmbulancesView() {
   const [fleet, setFleet] = useState([]);
   const [recentUpdates, setRecentUpdates] = useState(new Set());
   
-  const BASE_URL = "http://localhost:5005/api";
+  const BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
 
   useEffect(() => {
     const fetchAmbulances = async () => {

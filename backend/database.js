@@ -45,21 +45,8 @@ db.exec(`
     name TEXT,
     email TEXT UNIQUE,
     password TEXT,
-    plan TEXT DEFAULT 'FREE',
-    simulation_count INTEGER DEFAULT 0
+    plan TEXT DEFAULT 'FREE'
   );
-
-
-  CREATE TABLE IF NOT EXISTS hospitals (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    name TEXT NOT NULL,
-    lat REAL,
-    lon REAL,
-    region_id INTEGER NOT NULL,
-    units INTEGER DEFAULT 0,
-    FOREIGN KEY (region_id) REFERENCES regions(id)
-  );
-
 `);
 
 module.exports = db;

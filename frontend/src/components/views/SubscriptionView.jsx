@@ -45,39 +45,16 @@ export default function SubscriptionView() {
     setCurrentPlan(p);
   }, []);
 
-  const handleUpgrade = async (planId) => {
-    try {
-      const token = localStorage.getItem('token');
-      const res = await fetch("http://localhost:5005/api/user/plan", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}`
-        },
-        body: JSON.stringify({ plan: planId })
-      });
-      const data = await res.json();
-      
-      if (data.success) {
-        setCurrentPlan(planId);
-        
-        // Sync local user object
-        const saved = JSON.parse(localStorage.getItem('user'));
-        if (saved) {
-          saved.plan = planId.toUpperCase();
-          localStorage.setItem('user', JSON.stringify(saved));
-        }
+  const handleUpgrade = (planId) => {
+    setCurrentPlan(planId);
+    localStorage.setItem("userPlan", planId);
+    setMessage(`Plan upgraded to ${planId.toUpperCase()} successfully`);
+    
+    // Broadcast state strictly for UI reactivity cross-components without reloads
+    window.dispatchEvent(new Event('planChanged'));
 
-        setMessage(`Plan upgraded to ${planId.toUpperCase()} successfully`);
-        window.dispatchEvent(new Event('planChanged'));
-        setTimeout(() => setMessage(""), 3000);
-      }
-    } catch (err) {
-      console.error(err);
-      setMessage("Upgrade failed. Please try again.");
-    }
+    setTimeout(() => setMessage(""), 3000);
   };
-
 
   return (
     <div className="view-container pb-20">

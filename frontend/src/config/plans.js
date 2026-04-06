@@ -1,7 +1,7 @@
 export const plans = {
   free: {
     name: "Free",
-    features: ["basic_dispatch", "simulation"]
+    features: ["basic_dispatch"]
   },
   pro: {
     name: "Pro",

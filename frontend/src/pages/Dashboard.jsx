@@ -29,18 +29,17 @@ export default function Dashboard({ user, theme, onToggleTheme, onLogout }) {
     return () => clearInterval(timer);
   }, []);
 
-  const [userPlan, setUserPlan] = useState(() => {
-    const saved = localStorage.getItem('user');
-    if (saved) return JSON.parse(saved).plan || 'free';
-    return 'free';
-  });
-  
-  const [simulationCount, setSimulationCount] = useState(() => {
-    const saved = localStorage.getItem('user');
-    if (saved) return JSON.parse(saved).simulation_count || 0;
-    return 0;
-  });
+  const [userPlan, setUserPlan] = useState('free');
+  useEffect(() => {
+    const updatePlan = () => setUserPlan(localStorage.getItem('userPlan') || 'free');
+    updatePlan();
+    window.addEventListener('planChanged', updatePlan);
+    return () => window.removeEventListener('planChanged', updatePlan);
+  }, []);
 
+  const [simulationCount, setSimulationCount] = useState(() => {
+    return parseInt(localStorage.getItem('simCount') || '0', 10);
+  });
   
   const activeEmergenciesCount = events.filter(e => e.status !== 'COMPLETED').length;
   
@@ -63,18 +62,11 @@ export default function Dashboard({ user, theme, onToggleTheme, onLogout }) {
 
     try {
       setIsSimLoading(true);
-      const res = await simulateEmergency();
-      const newCount = res.simulation_count || (simCountRef.current + 1);
+      await simulateEmergency();
+      const newCount = simCountRef.current + 1;
       setSimulationCount(newCount);
-      
-      // Update local storage user object so it stays in sync
-      const saved = JSON.parse(localStorage.getItem('user'));
-      if (saved) {
-        saved.simulation_count = newCount;
-        localStorage.setItem('user', JSON.stringify(saved));
-      }
+      localStorage.setItem("simCount", newCount.toString());
     } catch (err) {
-
       console.error("Simulation Error", err);
     } finally {
       setTimeout(() => setIsSimLoading(false), 200);
@@ -209,18 +201,7 @@ export default function Dashboard({ user, theme, onToggleTheme, onLogout }) {
 
   return (
     <div className="app-wrapper">
-      <div className="anti-gravity-bg">
-        {[...Array(20)].map((_, i) => (
-          <div key={i} className={`ag-particle p${(i%6)+1}`} style={{
-            left: `${Math.random() * 100}%`,
-            top: `${Math.random() * 100}%`,
-            animationDelay: `${Math.random() * 5}s`,
-            opacity: Math.random() * 0.5 + 0.2
-          }}></div>
-        ))}
-      </div>
       <SectionBackground activeSection={activeMenu} />
-
 
       {/* ── HEADER NAVIGATION — Full width across top ── */}
       <header className="dashboard-header">
@@ -302,9 +283,8 @@ export default function Dashboard({ user, theme, onToggleTheme, onLogout }) {
           {activeMenu !== 'Dashboard' && (
             <div className="view-content-wrapper scrollable-view" style={{ flex: 1, overflowY: 'auto' }}>
               {activeMenu === 'Ambulances' && <AmbulancesView />}
-              {activeMenu === 'Emergency Log' && <RequestsView />}
+              {activeMenu === 'Requests'   && <RequestsView />}
               {activeMenu === 'Analytics'  && <AnalyticsView />}
-
               {activeMenu === 'Settings'   && <SettingsView onNavigate={setActiveMenu} />}
               {activeMenu === 'Subscription' && <SubscriptionView />}
             </div>
