@@ -1,46 +1,49 @@
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
 
-export default function StartScreen() {
-  const navigate = useNavigate();
-  const { user } = useAuth();
-
-  const handleStart = () => {
-    if (user) {
-      navigate('/dashboard');
-    } else {
-      navigate('/auth');
-    }
-  };
-
+// onStart is called by AppRoot to advance to the "intro" stage.
+// No react-router or useAuth dependency needed here.
+export default function StartScreen({ onStart }) {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-black via-gray-900 to-black p-4 relative overflow-hidden">
-      {/* Cinematic Background elements (same as AuthPage for consistency) */}
-      <div className="absolute inset-0 bg-black/40 backdrop-blur-[2px] z-0" />
-      
-      <div className="bg-white/10 backdrop-blur-lg p-10 rounded-3xl shadow-2xl w-full max-w-lg text-center border border-white/10 relative z-10 transition-all hover:border-red-500/30">
-        <div className="text-6xl mb-6 animate-bounce">🚑</div>
-        <h1 className="text-5xl font-black text-white mb-2 tracking-tighter">
-          LifeLine <span className="text-red-500">AI</span>
+    <div className="auth-container">
+      <div className="glass-card" style={{ textAlign: 'center' }}>
+
+        {/* Animated ambulance icon */}
+        <div style={{ fontSize: '3.5rem', marginBottom: '1.25rem', display: 'inline-block', animation: 'floatAntiGravity 3s ease-in-out infinite' }}>
+          🚑
+        </div>
+
+        <h1 style={{ fontSize: '2.4rem', fontWeight: 700, marginBottom: '6px', letterSpacing: '-0.02em' }}>
+          LifeLine <span style={{ color: '#ff3b3b' }}>AI</span>
         </h1>
-        <p className="text-gray-400 text-lg mb-10 font-medium uppercase tracking-widest opacity-80">
+
+        <p className="subtitle">
           Emergency Response System
         </p>
 
+        {/* Primary CTA — triggers stage transition to "intro" */}
         <button
-          onClick={handleStart}
-          className="group relative inline-flex items-center justify-center px-10 py-4 font-bold text-white transition-all duration-200 bg-red-500 font-pj rounded-xl focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 hover:bg-red-600 active:scale-95 shadow-lg shadow-red-500/20"
+          id="start-simulation-btn"
+          type="submit"
+          onClick={onStart}
+          style={{ marginTop: '1.5rem', width: '100%' }}
         >
-          <span className="mr-3 text-xl">▶</span>
-          Start Simulation
+          ▶ &nbsp; Start Simulation
         </button>
 
-        <div className="mt-8 pt-8 border-t border-white/5">
-          <p className="text-[10px] text-gray-500 font-mono tracking-[0.3em]">
-            SYSTEM ONLINE // SECURE ACCESS GRANTED
-          </p>
+        {/* Footer badge */}
+        <div style={{
+          marginTop: '1.75rem',
+          paddingTop: '1rem',
+          borderTop: '1px solid rgba(255,255,255,0.08)',
+          fontSize: '0.65rem',
+          letterSpacing: '0.18em',
+          color: 'rgba(255,255,255,0.35)',
+          textTransform: 'uppercase',
+          fontFamily: 'monospace',
+        }}>
+          SYSTEM ONLINE // SECURE ACCESS GRANTED
         </div>
+
       </div>
     </div>
   );

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import SplashScreen from './components/SplashScreen';
@@ -6,47 +6,121 @@ import StartScreen from './pages/StartScreen';
 import AuthPage from './pages/AuthPage';
 import Dashboard from './pages/Dashboard';
 import ProtectedRoute from './components/ProtectedRoute';
+import bgImage from './assets/bg-red-glass.png';
 
-function App() {
-  // PHASE 1 & 2: CONTROL FIRST LOAD & FORCE SPLASH ON REFRESH
-  // We use a React state that starts as 'false' on every mount/refresh.
-  // This satisfies "Refresh page -> Splash appears AGAIN (IMPORTANT)".
-  const [hasVisited, setHasVisited] = React.useState(false);
+// ── Stage machine ──────────────────────────────────────────────
+// Stages: "start" → "intro" → "auth" → "dashboard"
+//
+// Persisted in localStorage so reload stays on last stage.
+// Reset via:  window.resetApp()  in browser console.
+// ──────────────────────────────────────────────────────────────
 
+const STAGE_KEY = 'lifeline_stage';
+
+function setStage(stage) {
+  localStorage.setItem(STAGE_KEY, stage);
+}
+
+function getInitialStage() {
+  return localStorage.getItem(STAGE_KEY) || 'start';
+}
+
+// Expose global reset helper for QA / testing
+window.resetApp = () => {
+  localStorage.removeItem(STAGE_KEY);
+  window.location.reload();
+};
+
+// ── Background wrapper shared across all post-splash stages ───
+const BgWrapper = ({ children }) => (
+  <div
+    style={{
+      backgroundImage: `url(${bgImage})`,
+      backgroundSize: 'cover',
+      backgroundPosition: 'center',
+      backgroundAttachment: 'fixed',
+      minHeight: '100vh',
+      color: '#f3f4f6',
+      overflowX: 'hidden',
+    }}
+  >
+    {children}
+  </div>
+);
+
+// ── Main App ───────────────────────────────────────────────────
+export default function App() {
+  const [appStage, setAppStage] = useState(getInitialStage);
+
+  const goToStage = (stage) => {
+    setStage(stage);
+    setAppStage(stage);
+  };
+
+  // ── STAGE: start ──────────────────────────────────
+  if (appStage === 'start') {
+    return (
+      <BgWrapper>
+        <StartScreen onStart={() => goToStage('intro')} />
+      </BgWrapper>
+    );
+  }
+
+  // ── STAGE: intro (splash animation) ───────────────
+  if (appStage === 'intro') {
+    return (
+      <SplashScreen
+        onComplete={() => goToStage('auth')}
+      />
+    );
+  }
+
+  // ── STAGE: auth + dashboard (router-based) ────────
   return (
     <Router>
-      {!hasVisited ? (
-        /* PHASE 2: FORCE SPLASH ON FIRST LOAD (INCLUDING REFRESH) */
-        <SplashScreen onComplete={() => {
-          sessionStorage.setItem("visited", "true"); // Passive tracking
-          setHasVisited(true);
-        }} />
-      ) : (
-        <AuthProvider>
-          <div className="bg-black text-white min-h-screen">
-            <Routes>
-              {/* PHASE 5: STRICT ROUTING ORDER */}
-              <Route path="/" element={<SplashScreen onComplete={() => setHasVisited(true)} />} />
-              <Route path="/start" element={<StartScreen />} />
-              <Route path="/auth" element={<AuthPage />} />
-              
-              {/* PHASE 4: AUTH ONLY INSIDE ROUTES using ProtectedRoute */}
-              <Route 
-                path="/dashboard" 
-                element={
-                  <ProtectedRoute fallback={<Navigate to="/auth" />}>
-                    <Dashboard />
-                  </ProtectedRoute>
-                } 
-              />
-              {/* Fallback to root if user somehow bypasses */}
-              <Route path="*" element={<Navigate to="/" />} />
-            </Routes>
-          </div>
-        </AuthProvider>
-      )}
+      <AuthProvider>
+        <BgWrapper>
+          <Routes>
+            {/* Auth page — no redirect needed, stage is already "auth" */}
+            <Route
+              path="/"
+              element={
+                <AuthPage
+                  onAuthSuccess={() => goToStage('dashboard')}
+                />
+              }
+            />
+            <Route
+              path="/auth"
+              element={
+                <AuthPage
+                  onAuthSuccess={() => goToStage('dashboard')}
+                />
+              }
+            />
+
+            {/* Protected dashboard */}
+            <Route
+              path="/dashboard"
+              element={
+                <ProtectedRoute fallback={<Navigate to="/auth" replace />}>
+                  <Dashboard />
+                </ProtectedRoute>
+              }
+            />
+
+            {/* Catch-all — redirect based on current stage */}
+            <Route
+              path="*"
+              element={
+                appStage === 'dashboard'
+                  ? <Navigate to="/dashboard" replace />
+                  : <Navigate to="/auth" replace />
+              }
+            />
+          </Routes>
+        </BgWrapper>
+      </AuthProvider>
     </Router>
   );
 }
-
-export default App;

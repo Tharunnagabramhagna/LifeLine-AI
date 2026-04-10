@@ -13,8 +13,7 @@ export default function PasswordInput({ value, onChange, placeholder = "Enter pa
           placeholder={placeholder}
           value={value}
           onChange={onChange}
-          style={{ backgroundColor: 'rgba(0, 0, 0, 0.6)', color: 'white' }}
-          className="w-full p-4 rounded-xl border border-gray-600/50 focus:border-red-500/50 outline-none transition-all pr-12 backdrop-blur-md"
+          className="pr-12"
         />
         <button 
           type="button" 

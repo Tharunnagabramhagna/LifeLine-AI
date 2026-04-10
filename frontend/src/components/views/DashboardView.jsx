@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useTheme } from '../../context/ThemeContext';
 import { apiRequest, simulateEmergency } from '../../services/api';
 import { hasFeature } from '../../config/plans';
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
@@ -53,7 +54,8 @@ const createCinematicMarker = (status) => L.divIcon({
   popupAnchor: [0, -36],
 });
 
-export default function DashboardView({ ambulances, events, hospitals, theme, onSimulate, simulationCount, activeCount, userPlan: globalUserPlan }) {
+export default function DashboardView({ ambulances, events, hospitals, onSimulate, simulationCount, activeCount, userPlan: globalUserPlan }) {
+  const { theme } = useTheme();
   const [panelOpen, setPanelOpen] = useState(true);
   const [userPlan, setUserPlan] = useState(globalUserPlan || "free");
   const mapCenter = [16.5062, 80.6480];

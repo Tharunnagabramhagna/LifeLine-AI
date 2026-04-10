@@ -80,9 +80,17 @@ export const AuthProvider = ({ children }) => {
   };
 
   const logout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
-    setUser(null);
+    // remove token
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
+
+    // optional: clear socket
+    if (window.socket) {
+      window.socket.disconnect();
+    }
+
+    // redirect
+    window.location.href = "/auth";
   };
 
   return (

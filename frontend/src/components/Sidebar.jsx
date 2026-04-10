@@ -1,6 +1,10 @@
 import React from "react";
+import { useTheme } from "../context/ThemeContext";
+import { useAuth } from "../context/AuthContext";
 
-export default function Sidebar({ activeMenu, setActiveMenu, isOpen, theme, onToggleTheme, onLogout }) {
+export default function Sidebar({ activeMenu, setActiveMenu, isOpen, onLogout }) {
+  const { theme, toggleTheme } = useTheme();
+  const { logout } = useAuth();
   const menu = [
     { name: "Dashboard", icon: "📊" },
     { name: "Ambulances", icon: "🚑" },
@@ -10,7 +14,7 @@ export default function Sidebar({ activeMenu, setActiveMenu, isOpen, theme, onTo
   ];
 
   return (
-    <div className={`sidebar ${isOpen ? '' : 'hidden'}`}>
+    <div className={`sidebar ${isOpen ? '' : 'hidden'}`} style={{ background: 'var(--bg)', color: 'var(--text)' }}>
       {/* Glitter Effect */}
       <div className="glass-shimmer"></div>
 
@@ -48,7 +52,7 @@ export default function Sidebar({ activeMenu, setActiveMenu, isOpen, theme, onTo
       {/* Sidebar Bottom Actions */}
       <div className="sidebar-bottom">
         <div className="sidebar-action-group">
-          <button className="sidebar-action-btn theme-toggle" onClick={onToggleTheme} title="Toggle Theme" style={{ width: '100%' }}>
+          <button className="sidebar-action-btn theme-toggle" onClick={toggleTheme} title="Toggle Theme" style={{ width: '100%' }}>
             {theme === 'dark' ? '☀️' : '🌙'}
           </button>
         </div>
@@ -56,7 +60,7 @@ export default function Sidebar({ activeMenu, setActiveMenu, isOpen, theme, onTo
         {/* 🚪 Industry-grade Logout Button */}
         <button 
           className="logout-btn"
-          onClick={onLogout}
+          onClick={logout}
         >
           <span className="logout-icon">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none">

@@ -1,11 +1,9 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import PasswordInput from './PasswordInput';
 
 export default function SignUp({ onToggleView, onAuthSuccess }) {
   const { login } = useAuth();
-  const navigate = useNavigate();
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -50,15 +48,16 @@ export default function SignUp({ onToggleView, onAuthSuccess }) {
         throw new Error(data.error || data.message || "Registration failed");
       }
 
-      // Attempt login immediately
+      // Attempt auto-login immediately after registration
       try {
         await login(email, password);
         if (onAuthSuccess) {
           const user = JSON.parse(localStorage.getItem('user'));
           onAuthSuccess(user);
         }
-        navigate('/dashboard');
+        // Stage machine in AppRoot handles dashboard navigation
       } catch (loginErr) {
+        // Login failed after register — fall back to sign-in view
         onToggleView();
       }
 
@@ -71,10 +70,10 @@ export default function SignUp({ onToggleView, onAuthSuccess }) {
   };
 
   return (
-    <div className="bg-white/10 backdrop-blur-lg p-8 rounded-2xl shadow-xl w-full max-w-md">
+    <div>
       <div className="auth-logo-top text-red-500 text-4xl mb-4 text-center">🚑</div>
-      <h1 className="text-2xl font-bold text-white text-center">Sign Up</h1>
-      <p className="subtitle text-gray-400 text-center mb-6">New Operator Registration</p>
+      <h1>Sign Up</h1>
+      <p className="subtitle">New Operator Registration</p>
 
       <form onSubmit={handleSubmit}>
         <div className="auth-field-group mb-4">
@@ -85,7 +84,6 @@ export default function SignUp({ onToggleView, onAuthSuccess }) {
             placeholder="Enter your full name"
             value={formData.name}
             onChange={handleChange}
-            className="w-full p-3 rounded-lg bg-black/40 border border-gray-600 text-white focus:border-red-500 outline-none transition-all"
             required
             autoComplete="name"
           />
@@ -99,7 +97,6 @@ export default function SignUp({ onToggleView, onAuthSuccess }) {
             placeholder="Enter your email address"
             value={formData.email}
             onChange={handleChange}
-            className="w-full p-3 rounded-lg bg-black/40 border border-gray-600 text-white focus:border-red-500 outline-none transition-all"
             required
             autoComplete="email"
           />
@@ -111,7 +108,6 @@ export default function SignUp({ onToggleView, onAuthSuccess }) {
           placeholder="At least 6 characters"
           id="password"
           label="Password"
-          className="w-full p-3 rounded-lg bg-black/40 border border-gray-600 text-white"
         />
         {!isPasswordStrong && formData.password.length > 0 && (
           <div style={{ color: '#ff4d4d', fontSize: '12px', marginTop: '-14px', marginBottom: '14px' }}>
@@ -125,7 +121,6 @@ export default function SignUp({ onToggleView, onAuthSuccess }) {
           placeholder="Repeat your password"
           id="confirmPassword"
           label="Confirm Password"
-          className="w-full p-3 rounded-lg bg-black/40 border border-gray-600 text-white"
         />
         {!isMatch && formData.confirmPassword.length > 0 && (
           <div style={{ color: '#ff4d4d', fontSize: '12px', marginTop: '-14px', marginBottom: '14px' }}>
@@ -141,15 +136,14 @@ export default function SignUp({ onToggleView, onAuthSuccess }) {
 
         <button 
           type="submit" 
-          className="w-full bg-red-500 hover:bg-red-600 text-white py-3 rounded-lg font-bold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           disabled={!isFormValid}
         >
           {loading ? 'Creating Account...' : 'Create Account'}
         </button>
       </form>
 
-      <div className="auth-bottom-text text-center mt-6 text-gray-400">
-        Already have an account? <button onClick={onToggleView} className="text-red-500 hover:underline">Sign In</button>
+      <div className="auth-bottom-text text-center mt-6 text-sm">
+        Already have an account? <button type="button" onClick={onToggleView} className="text-link hover:underline font-semibold ml-1">Sign In</button>
       </div>
     </div>
   );

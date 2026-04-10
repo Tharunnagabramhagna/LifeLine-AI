@@ -20,7 +20,7 @@
 .settings-section-title {
   font-size: 18px;
   font-weight: 700;
-  color: white;
+  color: var(--text);
   margin-bottom: 20px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
   padding-bottom: 12px;
@@ -36,7 +36,7 @@
 .settings-row-text h4 {
   font-size: 15px;
   font-weight: 600;
-  color: white;
+  color: var(--text);
   margin: 0 0 4px 0;
 }
 
@@ -113,7 +113,7 @@
 .settings-input {
   background: rgba(255, 255, 255, 0.05);
   border: 1px solid rgba(255, 255, 255, 0.15);
-  color: white;
+  color: var(--text);
   padding: 12px 14px;
   border-radius: 8px;
   font-size: 14px;
@@ -136,7 +136,7 @@
 
 .settings-button {
   background: linear-gradient(135deg, #ff4d4d, #ff1a1a);
-  color: white;
+  color: var(--text);
   border: none;
   padding: 12px 24px;
   border-radius: 8px;

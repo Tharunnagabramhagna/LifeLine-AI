@@ -13,7 +13,7 @@ import SettingsView from '../components/views/SettingsView';
 import SubscriptionView from '../components/views/SubscriptionView';
 import { planLimits, hasFeature } from '../config/plans';
 
-export default function Dashboard({ user, theme, onToggleTheme, onLogout }) {
+export default function Dashboard({ user, onLogout }) {
   const [activeMenu, setActiveMenu] = useState('Dashboard');
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [events, setEvents] = useState([]);
@@ -130,20 +130,9 @@ export default function Dashboard({ user, theme, onToggleTheme, onLogout }) {
   useEffect(() => {
     loadData();
 
-    let demoInterval;
-    if (userPlan === 'free') {
-      const loadEventsOnly = async () => {
-        try {
-          const evts = await getEvents();
-          const safeEvts = Array.isArray(evts) ? evts : [];
-          setEvents([...safeEvts].sort((a, b) => {
-            const ranks = { CRITICAL: 3, HIGH: 3, MEDIUM: 2, LOW: 1 };
-            return (ranks[(b.severity || '').toUpperCase()] || 0) - (ranks[(a.severity || '').toUpperCase()] || 0);
-          }));
-        } catch(e) {}
-      };
-      demoInterval = setInterval(loadEventsOnly, 8000);
-    }
+    const interval = setInterval(() => {
+      loadData();
+    }, 8000);
 
     socket.on('new-emergency', (e) => {
       const toastId = Date.now();
@@ -190,7 +179,7 @@ export default function Dashboard({ user, theme, onToggleTheme, onLogout }) {
     });
 
     return () => {
-      if (demoInterval) clearInterval(demoInterval);
+      if (interval) clearInterval(interval);
       socket.off('new-emergency');
       socket.off('ambulance-assigned');
       socket.off('ambulance:update');
@@ -200,65 +189,40 @@ export default function Dashboard({ user, theme, onToggleTheme, onLogout }) {
   }, []);
 
   return (
-    <div className="app-wrapper">
+    <div className="app-wrapper" style={{ background: 'var(--bg)', color: 'var(--text)' }}>
       <SectionBackground activeSection={activeMenu} />
 
       {/* ── HEADER NAVIGATION — Full width across top ── */}
-      <header className="dashboard-header">
-        {/* LEFT — toggle button + logo */}
-        <div className="header-left">
+      <div className="topbar">
+        <div className="left" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
           <button
             className="menu-toggle"
             onClick={() => setSidebarOpen(!sidebarOpen)}
+            style={{ background: 'none', border: 'none', color: 'var(--text)', cursor: 'pointer', fontSize: '1.2rem' }}
           >
             {sidebarOpen ? '✕' : '☰'}
           </button>
-          <span className="header-logo" style={{ fontSize: '1.2rem', fontWeight: 800 }}>🚑 LifeLine-AI</span>
+          <span style={{ fontSize: '1.2rem', fontWeight: 'bold' }}>LifeLine AI</span>
         </div>
 
-        {/* CENTER — clock only and SIM */}
-        <div className="header-center" style={{ display: 'flex', gap: '15px', alignItems: 'center' }}>
-          <span className="header-clock" style={{ fontSize: '1.05rem', fontWeight: 700, letterSpacing: '0.05em' }}>{clock}</span>
-          
-          {userPlan === 'free' ? (
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginLeft: '10px' }}>
-              <span style={{ fontSize: '0.75rem', fontWeight: 'bold', color: 'var(--accent)', border: '1px solid var(--accent)', padding: '2px 8px', borderRadius: '12px', background: 'rgba(255,75,75,0.1)' }}>
-                Demo Mode Active
-              </span>
-              <span style={{ fontSize: '0.6rem', color: 'var(--text-secondary)', marginTop: '2px' }}>
-                Upgrade to unlock full real-time simulation
-              </span>
-            </div>
-          ) : (
-            <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-              <button 
-                onClick={() => setAutoSim(!autoSim)}
-                style={{ padding: '6px 12px', background: autoSim ? 'rgba(255,77,77,0.2)' : 'rgba(255,255,255,0.1)', color: autoSim ? '#ff4d4d' : 'var(--text-primary)', border: autoSim ? '1px solid #ff4d4d' : '1px solid rgba(255,255,255,0.2)', borderRadius: '20px', fontSize: '0.75rem', fontWeight: 'bold', cursor: 'pointer', transition: 'all 0.3s' }}
-              >
-                {autoSim ? '● STOP LIVE SIMULATION' : '▶ START LIVE SIMULATION'}
-              </button>
-              {isSimLoading && (
-                <span className="animate-spin" style={{ fontSize: '1rem', color: 'var(--text-primary)' }}>⚙️</span>
-              )}
-            </div>
-          )}
+        <div className="center-controls">
+          <button 
+            className="primary-btn" 
+            disabled={userPlan === 'free'}
+            onClick={() => setAutoSim(!autoSim)}
+            style={{ opacity: userPlan === 'free' ? 0.5 : 1, cursor: userPlan === 'free' ? 'not-allowed' : 'pointer' }}
+          >
+            {isSimLoading ? '⚙️' : (autoSim ? '● STOP LIVE SIMULATION' : '▶ START LIVE SIMULATION')}
+          </button>
+
+          <div className="pill">Active: {activeEmergenciesCount} / {(planLimits[userPlan] || planLimits.free).maxActiveEmergencies === Infinity ? '∞' : (planLimits[userPlan] || planLimits.free).maxActiveEmergencies}</div>
+          <div className="pill">Plan: {userPlan.toUpperCase()}</div>
         </div>
 
-        {/* RIGHT — LIVE badge + user profile */}
-        <div className="header-right">
-          <span className="live-badge" style={{ background: 'var(--bg-tertiary)', color: 'var(--text-primary)', padding: '4px 8px', borderRadius: '12px', fontSize: '0.75rem', marginRight: '5px', border: '1px solid var(--border-color)' }}>
-            Simulations: <span style={{ color: '#ff4d4d', fontWeight: 'bold' }}>{simulationCount} / {(planLimits[userPlan] || planLimits.free).maxSimulations === Infinity ? '∞' : (planLimits[userPlan] || planLimits.free).maxSimulations}</span>
-          </span>
-          <span className="live-badge" style={{ background: 'var(--bg-tertiary)', color: 'var(--text-primary)', padding: '4px 8px', borderRadius: '12px', fontSize: '0.75rem', marginRight: '5px', border: '1px solid var(--border-color)' }}>
-            Active: <span style={{ color: '#ff4d4d', fontWeight: 'bold' }}>{activeEmergenciesCount} / {(planLimits[userPlan] || planLimits.free).maxActiveEmergencies === Infinity ? '∞' : (planLimits[userPlan] || planLimits.free).maxActiveEmergencies}</span>
-          </span>
-          <span className="live-badge" style={{ background: 'var(--bg-tertiary)', color: 'var(--text-primary)', padding: '4px 8px', borderRadius: '12px', fontSize: '0.75rem', marginRight: '10px', border: '1px solid var(--border-color)' }}>
-            Plan: <span style={{ color: userPlan === 'free' ? 'gray' : '#ff4d4d', fontWeight: 'bold' }}>{userPlan.toUpperCase()}</span>
-          </span>
-          <span className="live-badge" style={{ color: 'var(--text-primary)' }}>● LIVE</span>
+        <div className="right">
           <UserProfile user={user} />
         </div>
-      </header>
+      </div>
 
       {/* ── BODY — Sidebar left + main content right ── */}
       <div className="dashboard-body">
@@ -266,8 +230,6 @@ export default function Dashboard({ user, theme, onToggleTheme, onLogout }) {
           activeMenu={activeMenu} 
           setActiveMenu={setActiveMenu} 
           isOpen={sidebarOpen} 
-          theme={theme}
-          onToggleTheme={onToggleTheme}
           onLogout={onLogout}
         />
 
@@ -275,7 +237,7 @@ export default function Dashboard({ user, theme, onToggleTheme, onLogout }) {
           {/* Dashboard: no scroll wrapper — DashboardView owns its full remaining space */}
           {activeMenu === 'Dashboard' && (
             <div className="view-content-wrapper" style={{ flex: 1, overflow: 'hidden', position: 'relative', display: 'flex', flexDirection: 'column' }}>
-              <DashboardView ambulances={ambulances} events={events} hospitals={hospitals} theme={theme} onSimulate={handleManualSimulation} simulationCount={simulationCount} activeCount={activeEmergenciesCount} userPlan={userPlan} />
+              <DashboardView ambulances={ambulances} events={events} hospitals={hospitals} onSimulate={handleManualSimulation} simulationCount={simulationCount} activeCount={activeEmergenciesCount} userPlan={userPlan} />
             </div>
           )}
 
